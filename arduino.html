@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Fruta Sonora</title>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding:2rem">
+  <h1>Fruta Sonora 🍓🎶</h1>
+  <button id="conectar">Conectar ao Arduino</button>
+  <p id="status">Status: Desconectado</p>
+
+  <audio id="som" src="som.mp3" preload="auto"></audio>
+
+  <script>
+    const botao = document.getElementById("conectar");
+    const statusTexto = document.getElementById("status");
+    const som = document.getElementById("som");
+
+    let porta;
+    let leitor;
+
+    async function conectarArduino() {
+      try {
+        porta = await navigator.serial.requestPort(); // Pede permissão
+        await porta.open({ baudRate: 9600 });
+
+        statusTexto.textContent = "Status: Conectado!";
+
+        const decodificador = new TextDecoderStream();
+        porta.readable.pipeTo(decodificador.writable);
+        leitor = decodificador.readable.getReader();
+
+        while (true) {
+          const { value, done } = await leitor.read();
+          if (done) break;
+          if (value && value.trim() === "TOQUE") {
+            som.currentTime = 0;
+            som.play();
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao conectar:", e);
+        statusTexto.textContent = "Status: Erro na conexão";
+      }
+    }
+
+    botao.addEventListener("click", conectarArduino);
+  </script>
+</body>
+</html>
